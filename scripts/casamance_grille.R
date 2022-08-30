@@ -17,7 +17,7 @@ grille_centre <- function() {
     mutate(wkt = sprintf("POLYGON((%s %s),(%s %s),(%s %s),(%s %s),(%s %s))",
       swX, swY, seX, seY, neX, neY, nwX, nwY, swX, swY)) %>%
     glimpse()
-  nc1 <- st_as_sf(df1, geometry=st_as_sfc(df1$wkt, crs = st_crs(4326))) %>%
+  nc1 <- st_as_sf(df1, geometry = st_as_sfc(df1$wkt, crs = st_crs(4326))) %>%
     glimpse()
   return(invisible(nc1))
 }

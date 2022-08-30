@@ -19,8 +19,8 @@ donnees_ods2xlsx <- function() {
 #
 # lecture des données
 # source("geo/scripts/casamance.R");donnees_lire_rio()
-donnees_lire_rio <- function() {
-  if (exists("_rio.df")) {
+donnees_lire_rio <- function(force = FALSE) {
+  if (exists("rio.df") & force == FALSE) {
     return(rio.df)
   }
   library(rio)
@@ -47,10 +47,28 @@ donnees_lire_rio <- function() {
   dsn <- sprintf("%s/CONF/donnees20210521_v2.xlsx", varDir)
   dsn <- sprintf("%s/CONF/donnees20210703_v2.xlsx", varDir)
   dsn <- sprintf("%s/CONF/donnees20210715_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20211012_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20211220_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20220705_v2.xlsx", varDir)
   carp("dsn: %s", dsn)
   rio.df <<- import(dsn, col_names = TRUE) %>%
     glimpse()
   return(invisible(rio.df))
+}
+# source("geo/scripts/casamance.R");donnees_lire_ods()
+donnees_lire_ods <- function() {
+  if (exists("_ods.df")) {
+    return(ods.df)
+  }
+  library(readODS)
+  dsn <- sprintf("%s/CONF/nouvelle base_18_12_2018.ods", varDir)
+  dsn <- sprintf("%s/CONF/base_24_12_2018.ods", varDir)
+  dsn <- sprintf("%s/CONF/base globale 30_06_2019.ods", varDir)
+  dsn <- sprintf("%s/CONF/nouvelle base Apalis_globale_juin2022.ods", varDir)
+  carp("dsn: %s", dsn)
+  ods.df <<- read_ods(dsn, col_names = TRUE) %>%
+    glimpse()
+  return(invisible(ods.df))
 }
 #
 # cohérence données espèces
@@ -91,16 +109,14 @@ donnees_especes <- function() {
 #
 # lecture des données
 # source("geo/scripts/casamance.R");donnees_lire()
-donnees_lire <- function() {
+donnees_lire <- function(force = TRUE) {
   carp()
   library(tidyverse)
   library(janitor)
-  system.time(df <- donnees_lire_rio())
+  system.time(df <- donnees_lire_rio(force))
   df <- df %>%
-    glimpse() %>%
     clean_names() %>%
-    dplyr::select(c(1:21)) %>%
-    glimpse()
+    dplyr::select(c(1:21))
   return(invisible(df))
 }
 #
@@ -153,23 +169,7 @@ donnees_lire_csv <- function() {
   df <- read_tsv(dsn)
   return(invisible(df))
 }
-#
-# lecture des données
-# source("geo/scripts/casamance.R");donnees_lire_ods()
-donnees_lire_ods <- function() {
-  if (exists("ods.df")) {
-    return(ods.df)
-  }
-  library(tidyverse)
-  library(readODS)
-  dsn <- sprintf("%s/CONF/nouvelle base_18_12_2018.ods", varDir)
-  dsn <- sprintf("%s/CONF/base_24_12_2018.ods", varDir)
-  dsn <- sprintf("%s/CONF/base globale 30_06_2019.ods", varDir)
-  carp("dsn: %s", dsn)
-  ods.df <<- import(dsn, col_names = TRUE) %>%
-    glimpse()
-  return(invisible(ods.df))
-}
+
 #
 # recherche des données 2019
 # source("geo/scripts/casamance.R");donnees_2019_lire()

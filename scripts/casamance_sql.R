@@ -43,3 +43,20 @@ sql_table_mailles_ecrire <- function(table = "casamance_mailles") {
   copy_to(dest = db_con, df = df, name = table, overwrite = TRUE)
   return(invisible(df))
 }
+#
+# récupération des tables sur le serveur en format xlsx
+# source("geo/scripts/casamance.R");sql_tables_get()
+sql_tables_get <- function() {
+  carp()
+  sql_table_get("casamance_mailles")
+  sql_table_get("casamance_especes")
+  sql_table_get("casamance_donnees2017")
+}
+sql_table_get <- function(table) {
+  library(httr)
+  url <- sprintf("https://oiseaux-casamance.com/outils/casamance_sauve.php?action=xlsx&export=%s", table)
+  carp(url)
+  dsn <- sprintf("%s/%s.xlsx", varDir, table)
+  GET(url, write_disk(dsn, overwrite = TRUE))
+  carp("dsn: %s", dsn)
+}

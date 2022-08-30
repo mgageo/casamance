@@ -51,11 +51,17 @@ Drive <- substr(getwd(), 1, 2)
 baseDir <- sprintf("%s/web", Drive)
 cfgDir <- sprintf("%s/web/geo/CASAMANCE", Drive);
 varDir <- sprintf("%s/web.heb/casamance/casamance", Drive);
+texDir <- cfgDir
+webDir <- sprintf("%s/web.heb/casamance", Drive);
 setwd(baseDir)
 source("geo/scripts/mga.R");
 source("geo/scripts/misc.R");
+source("geo/scripts/misc_atlas.R");
 source("geo/scripts/misc_db.R");
+source("geo/scripts/misc_ggplot.R");
 source("geo/scripts/misc_mysql.R");
+source("geo/scripts/misc_tex.R");
+source("geo/scripts/casamance_atlas.R");
 source("geo/scripts/casamance_alain.R");
 source("geo/scripts/casamance_donnees.R");
 source("geo/scripts/casamance_grille.R");
