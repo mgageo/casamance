@@ -8,12 +8,23 @@
 #
 ## quelques options générales ------------------------------------
 #
+# https://delladata.fr/conflits-de-packages-r/
+library(conflicted)
+conflicts_prefer(dplyr::filter(), .quiet = TRUE)
+conflicts_prefer(dplyr::select(), .quiet = TRUE)
+conflicts_prefer(dplyr::first(), .quiet = TRUE)
+conflicts_prefer(dplyr::last(), .quiet = TRUE)
+conflicts_prefer(dplyr::recode, .quiet = TRUE)
+conflicts_prefer(purrr::map, .quiet = TRUE)
+conflicts_prefer(jsonlite::fromJSON, .quiet = TRUE)
+#conflicts_prefer(tidyr::extract(), .quiet = TRUE)
 library(tidyverse)
 library(janitor)
 library(knitr)
 library(kableExtra)
+library(readr)
 options("encoding" = "UTF-8")
-par(mar = c(0, 0, 0, 0), oma = c(0, 0, 0, 0), mai = c(0, 0, 0, 0))
+# par(mar = c(0, 0, 0, 0), oma = c(0, 0, 0, 0), mai = c(0, 0, 0, 0))
 options(stringsAsFactors = FALSE)
 # le timeout sur le téléchargement via download.file
 options(timeout=120)
@@ -21,16 +32,23 @@ options(scipen=999) # pour désactiver l'écriture scientifique des nombres
 #options(OutDec= ",")
 # https://stackoverflow.com/questions/62140483/how-to-interpret-dplyr-message-summarise-regrouping-output-by-x-override
 options(dplyr.summarise.inform = F)
-# https://delladata.fr/conflits-de-packages-r/
-# library(conflicted)
-# conflict_prefer("filter", "dplyr")
-# conflict_prefer("select", "dplyr")
 # mes opérateurs
 '%!in%' <- function(x,y)!('%in%'(x,y))
 '%notin%' <- Negate('%in%')
+#
+# des flags globaux
+Tex <- TRUE
+Wiki <- TRUE
+OsmChange <- FALSE
+baseDir <- getwd()
+SysName <- Sys.info()[['sysname']]
 switch(Sys.info()[['sysname']],
-  Windows= {baseDir <-"d:/web"},
-  Linux  = {baseDir <- "/d/web"}
+  Windows= {
+    Drive <- "d:"
+  },
+  Linux  = {
+    Drive <- "/d"
+  }
 )
 copyright <- "@ Marc Gauthier CC-BY-NC-ND"
 # ne marche plus en 4.1.0
@@ -79,7 +97,7 @@ carp <- function(...) {
       return()
     }
   }
-  curcall <- as.character(deparse(sys.call(-1)))
+  curcall <- as.character(deparse(sys.call(-1)))[1]
   carp_call <<- gsub('\\(.*$', '', curcall)
   arguments <- as.list(match.call(expand.dots=FALSE))[-1]
   arguments <- arguments$...
@@ -119,7 +137,7 @@ confess <- function(...) {
   stop('confess')
 }
 die <- function(...) {
-  curcall <- as.character(deparse(sys.call(-1)))
+  curcall <- as.character(deparse(sys.call(-1)))[1]
   Curcall <<- gsub('\\(.*$', '', curcall)
   arguments <- as.list(match.call(expand.dots=FALSE))[-1]
   arguments <- arguments$...
@@ -213,7 +231,7 @@ df_ecrirex_java <- function(df, dsn=FALSE, suffixe="") {
   library(xlsx)
   df <- as.data.frame(df)
   if ( dsn == FALSE ) {
-    curcall <- as.character(deparse(sys.call(-1)))
+    curcall <- as.character(deparse(sys.call(-1)))[1]
     curcall <- gsub('\\(.*$', '', curcall)
     if ( suffixe != "" ) {
       suffixe <- sprintf("_%s", suffixe)
@@ -236,7 +254,7 @@ df_ecrirex <- function(df, dsn=FALSE, suffixe="") {
   library(writexl)
   df <- as.data.frame(df)
   if ( dsn == FALSE ) {
-    curcall <- as.character(deparse(sys.call(-1)))
+    curcall <- as.character(deparse(sys.call(-1)))[1]
     curcall <- gsub('\\(.*$', '', curcall)
     if ( suffixe != "" ) {
       suffixe <- sprintf("_%s", suffixe)
@@ -453,6 +471,15 @@ add.alpha <- function(col, alpha = 0.2){
 # jongle entre les différents formats d'image
 #
 plotImg <- function(img, alpha = 255, maxpixels = 50000000, new = TRUE, png = FALSE) {
+  if (is(img, "SpatRaster")) {
+    ncols <- ncol(img)
+    nrows <- nrow(img)
+    Carp("%sx%s", ncols, nrows)
+    dev.new(width = ncols, height = nrows, units = "px", pointsize = 12)
+    par(mar = c(0, 0, 0, 0), oma = c(0, 0, 0, 0), mai = c(0, 0, 0, 0))
+    plot(img, axes = FALSE, add = FALSE, legend = FALSE, maxcell = maxpixels)
+    return(invisible())
+  }
   ncols <<- img@ncols
   nrows <<- img@nrows
 #  carp('ncols: %s nrows:%s', img@ncols, img@nrows )
@@ -528,10 +555,10 @@ plotImgGray2 <- function(img, alpha=255, maxpixels=500000) {
 # autre version https://github.com/dahtah/imager/blob/master/R/conversions.R
 plotImgGray3 <- function(img, alpha=255, maxpixels=500000) {
   carp()
-  library(imager)
+#  library(imager)
   dev.new( width = img@ncols, height = img@nrows, units = "px", pointsize = 12)
   par(mar = c(0, 0, 0, 0), oma = c(0, 0, 0, 0), mai = c(0, 0, 0, 0))
-  img <- grayscale(img, method = "Luma", drop = TRUE)
+  img <- imager::grayscale(img, method = "Luma", drop = TRUE)
   plot(img, col = grayscale_colors, axes = FALSE, add = FALSE, maxpixels = maxpixels, alpha = alpha)
 }
 # source("geo/scripts/onc35.R");test_gray();
@@ -592,7 +619,7 @@ ggpdf <- function(plot = last_plot(), suffixe = '', dossier = '',  width = 0, he
     height <- par("din")[2]
   }
 #  stop("****")
-  curcall <- as.character(deparse(sys.call(-1)))
+  curcall <- as.character(deparse(sys.call(-1)))[1]
   curcall <- gsub('\\(.*$', '', curcall)
   if ( suffixe != "" ) {
     suffixe <- sprintf("_%s", suffixe)
@@ -603,12 +630,12 @@ ggpdf <- function(plot = last_plot(), suffixe = '', dossier = '',  width = 0, he
   dsn <- sprintf("%s%s/%s%s.pdf", texDir, dossier, curcall, suffixe)
   print(sprintf("%s() dsn : %s", curcall, dsn))
 #  ggsave(dsn, width=width, height=height)
-  ggsave(dsn, plot=plot)
+  ggsave(dsn, plot = plot)
   carp("***dsn: %s", dsn)
 }
 ggpdf2 <- function(p, suffixe = "", dossier = '', width = 7, height = 7) {
 #  library(cowplot)
-  curcall <- as.character(deparse(sys.call(-1)))
+  curcall <- as.character(deparse(sys.call(-1)))[1]
   curcall <- gsub('\\(.*$', '', curcall)
   if ( suffixe !=  "" ) {
     suffixe <- sprintf("_%s", suffixe)
@@ -628,7 +655,7 @@ txt2pdf <- function(txt = "test", suffixe = '', dossier = '',  width = 0, height
     height <- par("din")[2]
   }
 #  stop("****")
-  curcall <- as.character(deparse(sys.call(-1)))
+  curcall <- as.character(deparse(sys.call(-1)))[1]
   curcall <- gsub('\\(.*$', '', curcall)
   if ( suffixe != "" ) {
     suffixe <- sprintf("_%s", suffixe)
@@ -650,7 +677,7 @@ dev2pdf <- function(dsn = '', suffixe = '', dossier = '', w = 0, h = 0) {
     w <- par("din")[1]
     h <- par("din")[2]
   }
-  curcall <- as.character(deparse(sys.call(-1)))
+  curcall <- as.character(deparse(sys.call(-1)))[1]
   curcall <- gsub('\\(.*$', '', curcall)
   if ( suffixe != "" ) {
     suffixe <- sprintf("_%s", suffixe)
@@ -664,6 +691,7 @@ dev2pdf <- function(dsn = '', suffixe = '', dossier = '', w = 0, h = 0) {
   dev.copy(pdf, dsn, width = w, height = h)
   invisible(dev.off())
   carp(" dsn: %s", dsn)
+  return(invisible(dsn))
 }
 #
 # sauvegarde en fichier png d'un graphique
@@ -672,7 +700,7 @@ dev2png <- function(dsn = '', suffixe = "", arbo = "", w = 0, h = 0) {
     w <- par("din")[1]
     h <- par("din")[2]
   }
-  curcall <- as.character(deparse(sys.call(-1)))
+  curcall <- as.character(deparse(sys.call(-1)))[1]
   curcall <- gsub('\\(.*$', '', curcall)
   if ( suffixe != "" ) {
     suffixe <- sprintf("_%s", suffixe)
@@ -688,7 +716,7 @@ dev2png <- function(dsn = '', suffixe = "", arbo = "", w = 0, h = 0) {
 # sauvegarde en format pdf
 txt2pdf <- function(txt, dsn = FALSE, suffixe = "", dossier = "") {
   if ( dsn == FALSE ) {
-    curcall <- as.character(deparse(sys.call(-1)))
+    curcall <- as.character(deparse(sys.call(-1)))[1]
     curcall <- gsub('\\(.*$', '', curcall)
     if ( suffixe != "" ) {
       suffixe <- sprintf("_%s", suffixe)
@@ -717,7 +745,7 @@ txt2pdf <- function(txt, dsn = FALSE, suffixe = "", dossier = "") {
 # sauvegarde en format tex
 txt2tex <- function(txt, dsn = FALSE, suffixe = "", dossier = "") {
   if ( dsn == FALSE ) {
-    curcall <- as.character(deparse(sys.call(-1)))
+    curcall <- as.character(deparse(sys.call(-1)))[1]
     curcall <- gsub('\\(.*$', '', curcall)
     if ( suffixe != "" ) {
       suffixe <- sprintf("_%s", suffixe)
@@ -741,7 +769,7 @@ txt2tex <- function(txt, dsn = FALSE, suffixe = "", dossier = "") {
 #
 # sauvegarde en fichier pdf d'un graphique
 tex2fic_v1 <- function(tex, suffixe = "") {
-  curcall <- as.character(deparse(sys.call(-1)))
+  curcall <- as.character(deparse(sys.call(-1)))[1]
   curcall <- gsub('\\(.*$', '', curcall)
   if ( suffixe !=  "" ) {
     suffixe <- sprintf("_%s", suffixe)
@@ -757,7 +785,7 @@ tex2fic_v1 <- function(tex, suffixe = "") {
 # sauvegarde d'un texte pour utilsation en latex
 tex2fic <- function(tex, dsn = FALSE, suffixe = "", dossier = "") {
   if ( dsn  ==  FALSE ) {
-    curcall <- as.character(deparse(sys.call(-1)))
+    curcall <- as.character(deparse(sys.call(-1)))[1]
     curcall <- gsub('\\(.*$', '', curcall)
     if ( suffixe !=  "" ) {
       suffixe <- sprintf("_%s", suffixe)
@@ -777,7 +805,7 @@ tex2fic <- function(tex, dsn = FALSE, suffixe = "", dossier = "") {
 export_df2xlsx_java <- function(df, dsn = FALSE, suffixe = "", dossier = "", onglet = 'export') {
   library(xlsx)
   if ( dsn  ==  FALSE ) {
-    curcall <- as.character(deparse(sys.call(-1)))
+    curcall <- as.character(deparse(sys.call(-1)))[1]
     curcall <- gsub('\\(.*$', '', curcall)
     if ( suffixe !=  "" ) {
       suffixe <- sprintf("_%s", suffixe)
@@ -794,7 +822,7 @@ export_df2xlsx <- function(df, dsn = FALSE, suffixe = "", dossier = "", onglet =
   library(writexl)
 #  stop('****')
   if ( dsn == FALSE ) {
-    curcall <- as.character(deparse(sys.call(-1)))
+    curcall <- as.character(deparse(sys.call(-1)))[1]
     curcall <- gsub('\\(.*$', '', curcall)
     if ( suffixe != "" ) {
       suffixe <- sprintf("_%s", suffixe)
@@ -807,9 +835,9 @@ export_df2xlsx <- function(df, dsn = FALSE, suffixe = "", dossier = "", onglet =
   writexl::write_xlsx(df, path=dsn)
   carp("dsn: %s", dsn)
 }
-export_df2xlsx <- function(df, dsn=FALSE, suffixe="", dossier="", onglet='export') {
+misc_df2xlsx <- function(df, dsn = FALSE, suffixe = "", dossier = "", onglet = 'export') {
    if ( dsn  ==  FALSE ) {
-    curcall <- as.character(deparse(sys.call(-1)))
+    curcall <- as.character(deparse(sys.call(-1)))[1]
     curcall <- gsub('\\(.*$', '', curcall)
     if ( suffixe !=  "" ) {
       suffixe <- sprintf("_%s", suffixe)
@@ -826,7 +854,7 @@ export_df2xlsx <- function(df, dsn=FALSE, suffixe="", dossier="", onglet='export
 # sauvegarde en format rds
 sauve_rds <- function(objet, dsn = FALSE, suffixe = "", dossier = "") {
   if ( dsn  ==  FALSE ) {
-    curcall <- as.character(deparse(sys.call(-1)))
+    curcall <- as.character(deparse(sys.call(-1)))[1]
     curcall <- gsub('\\(.*$', '', curcall)
     if ( suffixe !=  "" ) {
       suffixe <- sprintf("_%s", suffixe)
@@ -852,9 +880,17 @@ lire_rds <- function(dsn = FALSE, suffixe = "", dossier = "") {
   if ( dossier !=  "" ) {
     dossier <- sprintf("%s/", dossier)
   }
+  if ( suffixe !=  "" ) {
+    suffixe <- sprintf("_%s", suffixe)
+  }
   dsn <- sprintf("%s/%s%s%s.Rds", cfgDir, dossier, dsn, suffixe)
   carp("dsn: %s", dsn)
-  object <- readRDS(dsn)
+  if (file.exists(dsn)) {
+    object <- readRDS(dsn)
+  } else {
+    carp("dsn: %s file.exists FALSE", dsn)
+    object <- FALSE
+  }
   return(invisible(object))
 #  stop('****')
 
@@ -865,6 +901,20 @@ misc_list2tpl <- function(foo, tpl) {
   for(i in seq_along(foo)) {
     val <- foo[[i]]
     v <- names(foo)[i]
+#    carp("v: %s=>%s", v, val)
+    re <- paste0("\\{\\{", v, "\\}\\}")
+    tpl <- gsub(re, val, tpl, perl = TRUE)
+#    print(tpl); stop("*****")
+  }
+  return(invisible(tpl))
+}
+#
+# template du pauvre
+misc_glue <- function(foo, tpl, .open = "{{", .close = "}}") {
+  for(i in seq_along(foo)) {
+    v <- foo[[i]]
+#    carp("v: %s", v)
+    val <- get(v)
 #    carp("v: %s=>%s", v, val)
     re <- paste0("\\{\\{", v, "\\}\\}")
     tpl <- gsub(re, val, tpl, perl = TRUE)
@@ -912,26 +962,85 @@ misc_dfclass <- function(obj) {
 ## fonctions utilitaires
 #
 # sauvegarde / restauration
-misc.list <<- list()
-misc_lire <- function(rds = 'lire', rds_dir = FALSE, force = FALSE) {
-#  carp("rds: %s", rds)
-  if ( rds_dir == FALSE) {
-    rds_dir = varDir
+misc_list <- list()
+misc_lire <- function(rds = 'lire', dir = FALSE, force = FALSE) {
+#  carp("rds: %s force: %s", rds, force)
+  if (force == TRUE) {
+    return(invisible(FALSE))
   }
-  if ( ! exists(rds, where=misc.list) | force == TRUE) {
-    dsn <- sprintf("%s/%s.Rds", rds_dir, rds)
-    carp("dsn: %s", dsn)
-    misc.list[[rds]] <<- readRDS(file = dsn)
+  if (dir == FALSE) {
+    dir = varDir
   }
-  return(invisible(misc.list[[rds]]))
+  if ( ! exists(rds, where = misc_list) || force == TRUE) {
+    dsn <- sprintf("%s/%s.Rds", dir, rds)
+#    carp("dsn: %s force: %s", dsn, force)
+#    glimpse(misc_list)
+    if (file.exists(dsn)) {
+      misc_list[[rds]] <<- readRDS(file = dsn)
+    } else {
+      carp("**** dsn: %s", dsn)
+      return(invisible(FALSE))
+    }
+  }
+  return(invisible(misc_list[[rds]]))
 }
-misc_ecrire <- function(obj, rds = "sauve") {
-  misc.list[[rds]] <<- obj
-  dsn <- sprintf("%s/%s.Rds", varDir, rds)
+misc_ecrire <- function(obj, rds = "sauve", dir = FALSE) {
+  if ( dir == FALSE) {
+    dir <- varDir
+  }
+  misc_list[[rds]] <<- obj
+  dsn <- sprintf("%s/%s.Rds",dir, rds)
   carp("dsn: %s", dsn)
   saveRDS(obj, file = dsn)
   return(invisible(obj))
 }
+misc_exists <- function(obj, rds = "sauve", dir = FALSE) {
+  if ( dir == FALSE) {
+    dir <- varDir
+  }
+  dsn <- sprintf("%s/%s.Rds",dir , rds)
+  return(invisible(file.exists(dsn)))
+}
+#
+# variante avec arrow/parquet
+misc.list <<- list()
+misc.lire <- function(parquet = 'lire', dir = FALSE, force = FALSE) {
+  library(nanoparquet)
+#  carp("parquet: %s", parquet)
+  if (force == TRUE) {
+    return(invisible(FALSE))
+  }
+  if ( dir == FALSE) {
+    parquet_dir <- varDir
+  } else {
+    parquet_dir <- dir
+  }
+  if ( ! exists(parquet, where = misc.list) || force == TRUE) {
+    dsn <- sprintf("%s/%s.parquet", parquet_dir, parquet)
+    carp("dsn: %s", dsn)
+    if (file.exists(dsn)) {
+      misc.list[[parquet]] <<- nanoparquet::read_parquet(file = dsn)
+    } else {
+      return(invisible(FALSE))
+    }
+  }
+  return(invisible(misc.list[[parquet]]))
+}
+misc.ecrire <- function(obj, parquet = "sauve", dir = FALSE) {
+  library(nanoparquet)
+  if ( dir == FALSE) {
+    parquet_dir <- varDir
+  } else {
+    parquet_dir <- dir
+  }
+  misc.list[[parquet]] <<- obj
+  dsn <- sprintf("%s/%s.parquet", parquet_dir, parquet)
+  carp("dsn: %s", dsn)
+  nanoparquet::write_parquet(obj, dsn)
+  return(invisible(obj))
+}
+#
+#
 misc_sf2geojson <- function(nc, geojson = "sauve") {
   dsn <- sprintf("%s/%s.geojson", varDir, geojson)
   carp("dsn: %s", dsn)
@@ -952,6 +1061,8 @@ misc_html_titre <- function(titre = "titre") {
     <meta http-equiv="expires" content="43200"/>
   </head>
   <body>
+<iframe style="display:none" id="hiddenIframe" name="hiddenIframe"></iframe>
+</iframe>
 '
   sprintf(html, titre)
 }
@@ -968,11 +1079,37 @@ misc_html_append <- function(html1, html2) {
 }
 misc_html_append_df <- function(html, df) {
   glimpse(df)
+  rownames(df) <- NULL
   htm <- df %>%
     kbl(escape = F) %>%
 #    kable_minimal() %>%
     kable_styling(bootstrap_options = "striped", full_width = F, position = "left", fixed_thead = T)
   html <- append(html, htm)
+}
+misc_html_df2fic <- function(df, titre = "titre", dsn = FALSE, suffixe = "", dossier = "") {
+  html <-  misc_html_titre(titre = titre)
+  rownames(df) <- NULL
+  htm <- df %>%
+    kbl(escape = F) %>%
+#    kable_minimal() %>%
+    kable_styling(bootstrap_options = "striped", full_width = F, position = "left", fixed_thead = T)
+  html <- append(html, htm)
+  html <- misc_html_pied(html)
+  if ( dsn == FALSE ) {
+    curcall <- as.character(deparse(sys.call(-1)))[1]
+    curcall <- gsub('\\(.*$', '', curcall)
+    if ( suffixe != "" ) {
+      suffixe <- sprintf("_%s", suffixe)
+    }
+    if ( dossier != "" ) {
+      dossier <- sprintf("%s/", dossier)
+      d <- sprintf("%s/%s", texDir, dossier)
+      dir.create(d, showWarnings = FALSE, recursive = TRUE)
+    }
+    dsn <- sprintf("%s/%s%s%s.html", webDir, dossier, curcall, suffixe)
+  }
+  write(html, dsn)
+  carp("dsn: %s", dsn)
 }
 #
 ## pour journaliser
@@ -1027,4 +1164,90 @@ misc_zip <- function(dossier, filtre, zipfile) {
   files <- list.files(".", filtre)
   zip::zip(zipfile = zipfile, files = files, root = ".")
   setwd(wd) #
+}
+# source("geo/scripts/transport.R");misc_dsn_test()
+misc_dsn_test <- function(dsn = FALSE, suffixe = "toto", dossier = "") {
+  dsn <- misc_dsn(match.call())
+  print(sprintf("dsn: %s", dsn))
+}
+misc_dsn <- function(dsn = FALSE, suffixe = "", dossier = "", extension = "tex",...) {
+  if ( dsn == FALSE ) {
+    curcall <- as.character(deparse(sys.call(-1)))[1]
+    curcall <- gsub('\\(.*$', '', curcall)
+    if ( suffixe != "" ) {
+      suffixe <- sprintf("_%s", suffixe)
+    }
+    if ( dossier != "" ) {
+      dossier <- sprintf("%s/", dossier)
+      d <- sprintf("%s/%s", texDir, dossier)
+      dir.create(d, showWarnings = FALSE, recursive = TRUE)
+    }
+    dsn <- sprintf("%s/%s%s%s.%s", texDir, dossier, curcall, suffixe, extension)
+  }
+  return(invisible(dsn))
+}
+#
+## gestion d'un cache
+misc_cache_ecrire <- function(objet, nom) {
+  if ( ! exists("misc_cache.list")) {
+    misc_cache.list <<- list()
+  }
+  misc_cache.list[[nom]] <<- objet
+  dsn <- sprintf("%s/misc_cache.rds", varDir)
+  saveRDS(misc_cache.list, dsn)
+  carp("dsn: %s", dsn)
+}
+misc_cache_lire <- function(nom) {
+  if ( ! exists("misc_cache.list")) {
+    misc_cache.list <<- misc_cache_read()
+  }
+  if ( exists(nom, where = misc_cache.list)) {
+    return(invisible(misc_cache.list[[nom]]))
+  }
+  return(invisible(FALSE))
+}
+# lecture du fichier rds
+misc_cache_read <- function() {
+  dsn <- sprintf("%s/misc_cache.rds", varDir)
+  carp("dsn: %s", dsn)
+  if (file.exists(dsn)) {
+    misc_cache.list <<- readRDS(dsn)
+  } else {
+    misc_cache.list <<- list()
+  }
+  return(invisible(misc_cache.list))
+}
+misc_scite <- function(dsn) {
+  scite <- "C:\\Program Files (x86)\\AutoIt3\\SciTE\\SciTE.exe"
+  system2(scite, dsn)
+}
+# source("geo/scripts/misc.R"); misc_df2hoist(j)
+misc_df2hoist <- function(df) {
+  cols.df <- df %>%
+    dplyr::summarise_all(class) %>%
+    tidyr::gather(variable, class)
+  misc_print(cols.df)
+  lignes <- ""
+  for (i in 1:nrow(cols.df)) {
+    if (cols.df[[i, "class"]] != "list") {
+      next
+    }
+    df1 <<- df[[1, i]][[1]]
+    cols1 <<- names(df1)
+    for (col1 in cols1) {
+      ligne <- sprintf('  hoist(%s, %s.%s = "%s") |>', cols.df[[i, "variable"]], cols.df[[i, "variable"]], col1, col1)
+      lignes <- append(lignes , ligne)
+    }
+#    ligne <- sprintf('  select(-%s) |>', cols.df[[i, "variable"]])
+#    lignes <- append(lignes , ligne)
+#    break
+  }
+  for (i in 1:nrow(cols.df)) {
+    if (cols.df[[i, "class"]] == "list") {
+      next
+    }
+    ligne <- sprintf('  select(-%s) |>', cols.df[[i, "variable"]])
+    lignes <- append(lignes , ligne)
+  }
+  writeLines(lignes)
 }

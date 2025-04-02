@@ -1,5 +1,7 @@
 # <!-- coding: utf-8 -->
-# atlas
+#
+# quelques fonctions génériques atlas
+#
 # auteur : Marc Gauthier
 # licence: Creative Commons Paternité - Pas d'Utilisation Commerciale - Partage des Conditions Initiales à l'Identique 2.0 France
 # ===============================================================
@@ -22,8 +24,8 @@ atlas_test <- function(force = FALSE) {
 #bzha;utm;22,29,35,44,56
 bzh;ntf;22,29,35,56
 bzha;ntf;22,29,35,44,56
-", header=TRUE, sep=";", blank.lines.skip = TRUE, stringsAsFactors = FALSE, quote = "")
-  for(i in 1:nrow(df)) {
+", header = TRUE, sep = ";", blank.lines.skip = TRUE, stringsAsFactors = FALSE, quote = "")
+  for (i in 1:nrow(df)) {
     carp("***** i: %s", i)
     atlas_zone <<- df[[i, "zone"]]
     atlas_grille <<- df[[i, "grille"]]
@@ -54,7 +56,7 @@ atlas_zone_grille_voisines <- function(force = FALSE) {
 atlas_grille_voisines <- function(nc, force = TRUE) {
   carp("détermination des voisines")
   for (i in 1:nrow(nc)) {
-    voisines <- st_intersects(x = nc, y = nc[i, ], sparse = F)
+    voisines <- st_intersects(x = nc, y = nc[i, ], sparse = FALSE)
     voisines <- nc[voisines, ]$Maille
     voisines <- voisines[! voisines %in% c(nc[i, "Maille"])]
     nc[i, "voisines_nb"] <-  length(voisines)
@@ -92,7 +94,7 @@ atlas_zone_ign <- function(les_departements = c("22", "29", "35", "56"), force =
   nc1 <- ign.sf %>%
     mutate(insee = "tous") %>%
     group_by(insee) %>%
-    summarise(do_union = T) %>%
+    summarise(do_union = TRUE) %>%
     glimpse()
   carp("on simplifie avant: %s", object.size(nc1))
   nc2 <- ms_simplify(nc1, keep = 0.05, keep_shapes = TRUE)
@@ -178,11 +180,11 @@ d44;ntf;44
 d56;utm;56
 d56;l93;56
 d56;ntf;56
-", header=TRUE, sep=";", blank.lines.skip = TRUE, stringsAsFactors = FALSE, quote = "")
+", header = TRUE, sep = ";", blank.lines.skip = TRUE, stringsAsFactors = FALSE, quote = "")
   texFic <- sprintf("%s/atlas_grilles_tex.tex", texDir)
   TEX <- file(texFic)
   tex <- "% <!-- coding: utf-8 -->"
-  for(i in 1:nrow(df)) {
+  for (i in 1:nrow(df)) {
     carp("***** i: %s", i)
     atlas_zone <<- df[[i, "zone"]]
     atlas_grille <<- df[[i, "grille"]]
@@ -217,7 +219,7 @@ atlas_grille_zone <- function(force = FALSE, debug = TRUE) {
     glimpse() %>%
     mutate(insee = "zone") %>%
     group_by(insee) %>%
-    summarise(do_union = T) %>%
+    summarise(do_union = TRUE) %>%
     glimpse()
   if (debug) {
     plot(st_geometry(zone.sf), col = "grey")
@@ -226,7 +228,7 @@ atlas_grille_zone <- function(force = FALSE, debug = TRUE) {
     filter(INSEE_DEP %notin% atlas_departements) %>%
     mutate(insee = "hors") %>%
     group_by(insee) %>%
-    summarise(do_union = T) %>%
+    summarise(do_union = TRUE) %>%
     glimpse()
   if (debug) {
     plot(st_geometry(hors.sf), add = TRUE, col = "red")
@@ -391,11 +393,11 @@ atlas_far_tex <- function(df) {
   df$pa <- cell_spec(round(df$pa, 2), color = df$couleur, format = "html")
   misc_print(df)
   tex <- knitr::kable(df, "latex"
-    , longtable = T
+    , longtable = TRUE
     , booktabs = TRUE
-    , linesep = c(rep('', 9),'\\addlinespace')
+    , linesep = c(rep('', 9),"\\addlinespace")
     , digits = 1
-    , format.args = list(decimal.mark = ',')
+    , format.args = list(decimal.mark = ",")
     ) %>%
     kable_styling(
       position = "left",
@@ -404,9 +406,9 @@ atlas_far_tex <- function(df) {
     )
 # \cellcolor{yellow}
   tex <- tex %>%
-    str_replace_all(' <span style="     color: ', '\\\\cellcolor[HTML]{') %>%
-    str_replace_all(' !important;" >', '}') %>%
-    str_replace_all('</span> ', '') %>%
-    str_replace_all('</span>', '')
+    str_replace_all(' <span style="     color: ', "\\\\cellcolor[HTML]{") %>%
+    str_replace_all(' !important;" >', "}") %>%
+    str_replace_all("</span> ", "") %>%
+    str_replace_all("</span>", "")
   return(invisible(tex))
 }

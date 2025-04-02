@@ -1,7 +1,10 @@
+# <!-- coding: utf-8 -->
 #
 # quelques fonctions pour la casamance
-# auteur: Marc Gauthier
 #
+# auteur : Marc Gauthier
+# licence: Creative Commons Paternité - Pas d'Utilisation Commerciale - Partage des Conditions Initiales à l'Identique 2.0 France
+# ===============================================================
 #
 # la grille utm
 # source("geo/scripts/casamance.R"); nc1 <- grille_centre()

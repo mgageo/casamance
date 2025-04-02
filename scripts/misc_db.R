@@ -19,6 +19,13 @@ db_postgresql_connect <- function() {
     password = db_password
   )
 }
+db_MySQL_killConnections <- function () {
+  all_cons <- dbListConnections(MySQL())
+  for(con in all_cons) {
+    dbDisconnect(con)
+  }
+  print(paste(length(all_cons), " connections killed."))
+}
 #
 # la lecture peut s'effecteur sur "schema, table" ou "schema.table"
 # source("geo/scripts/geonature.R");postgresql_table_lire('gn_synthese', 'synthese')
@@ -69,6 +76,7 @@ db_SendQuery <- function(db_con, sql) {
   carp('sql: %s', sql)
   tryCatch({
     result <- DBI::dbSendQuery(db_con, sql)
+    mga <<- result
     df <- dbFetch(result, n = -1)
     dbClearResult(result)
     return(invisible(df))

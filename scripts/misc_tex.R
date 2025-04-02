@@ -118,7 +118,26 @@ tex_fonction <- function(e, mode="carte", args = "", suffixe="", dossier="images
 # conversion en table latex
 # http://math.furman.edu/~dcs/courses/math47/R/library/xtable/html/print.xtable.html
 # pas en utf-8
-tex_df2table <- function(df, dsn=FALSE, suffixe="", dossier="", num=FALSE, nb_lignes=50, align=FALSE, digits=0) {
+tex_dsn <- function(dsn = FALSE, suffixe = "", dossier = "") {
+  if ( dsn == FALSE ) {
+    curcall <- as.character(deparse(sys.call(-1)))
+    curcall <- gsub('\\(.*$', '', curcall)
+    if ( suffixe != "" ) {
+      suffixe <- sprintf("_%s", suffixe)
+    }
+    if ( dossier != "" ) {
+      dossier <- sprintf("%s/", dossier)
+      dir.create(sprintf("%s/%s", texDir, dossier), showWarnings = FALSE, recursive = TRUE)
+    }
+    dsn <- sprintf("%s/%s%s%s.tex", texDir, dossier, curcall, suffixe)
+  }
+  return(invisible(dsn))
+}
+#
+# conversion en table latex
+# http://math.furman.edu/~dcs/courses/math47/R/library/xtable/html/print.xtable.html
+# pas en utf-8
+tex_df2table <- function(df, dsn = FALSE, suffixe = "", dossier = "", entete = FALSE, num = FALSE, nb_lignes = 50, digits = 0) {
   library(xtable)
 #  library("Hmisc")
   options("encoding" = "UTF-8")
@@ -130,6 +149,7 @@ tex_df2table <- function(df, dsn=FALSE, suffixe="", dossier="", num=FALSE, nb_li
     }
     if ( dossier != "" ) {
       dossier <- sprintf("%s/", dossier)
+      dir.create(sprintf("%s/%s", texDir, dossier), showWarnings = FALSE, recursive = TRUE)
     }
     dsn <- sprintf("%s/%s%s%s.tex", texDir, dossier, curcall, suffixe)
   }
@@ -148,24 +168,27 @@ tex_df2table <- function(df, dsn=FALSE, suffixe="", dossier="", num=FALSE, nb_li
   ligne <- 1
 #  nb_lignes <- 50
   row.names(df) <- 1:nrow(df)
+#  carp("entete: %s", entete)
+#  carp("dsn: %s", dsn)
   while ( ligne <= nrow(df) ) {
     fin <- ligne + nb_lignes - 1
     fin <- min(fin, nrow(df))
-    dfl <- df[ligne:fin,]
-#    Log(sprintf("atlas_combine_stat() ligne: %d nrow: %d", ligne, nrow(dfl)))
-    if ( align != FALSE) {
+    dfl <- df[ligne:fin, ]
+#    Carp("ligne: %d nrow: %d", ligne, nrow(df))
+    if ( entete != FALSE) {
 #      df.table <- xtable(dfl, digits=digits, align='m|m{4cm}|m{15cm}|')
-      df.table <- xtable(dfl, digits=digits, align=align)
+      df.table <- xtable(dfl, digits=digits)
+      align(df.table) <- entete
       print(
         x = df.table,
         type="latex",
         hline.after = c(-1, 0, 1:nrow(df.table)),
         include.rownames=num,
-        tabular.environment = "tabularx",
-        width="\\textwidth", table.placement="!ht",
-        floating=TRUE,
+        tabular.environment = "longtable",
+        table.placement="!ht",
+        floating=FALSE,
         file=dsn,
-        append=
+        append=ajout
       )
     } else {
       df.table <- print.xtable(
@@ -174,25 +197,26 @@ tex_df2table <- function(df, dsn=FALSE, suffixe="", dossier="", num=FALSE, nb_li
       )
       print(
         x = df.table,
-        type="latex",
-        include.rownames=num,
-        table.placement="!ht",
-        file=dsn,
-        append=ajout
+        type = "latex",
+        include.rownames = num,
+        table.placement = "!ht",
+        file = dsn,
+        append = ajout
       )
     }
 #    cat("\\vfill\n\\clearpage\n")
     ajout <- TRUE
     ligne <- fin +1
   }
-  carp("dsn: %s", dsn)
+  t <- readLines(dsn)
+  return(invisible(t))
 }
-tex_df2kable <- function(df, dsn = FALSE, suffixe = "", dossier = "", nb_lignes = 0, num = FALSE, digits = 1, font_size = 9, extra = FALSE, escape = TRUE) {
+tex_df2kable <- function(df, dsn = FALSE, suffixe = "", dossier = "", nb_lignes = 0, num = FALSE, digits = 1, font_size = 7, longtable = TRUE, extra = FALSE, escape = TRUE) {
   library(knitr)
   library(kableExtra)
   options("encoding" = "UTF-8")
   if ( dsn == FALSE ) {
-    curcall <- as.character(deparse(sys.call(-1)))
+    curcall <- as.character(deparse(sys.call(-1)))[1]
     curcall <- gsub('\\(.*$', '', curcall)
     if ( suffixe != "" ) {
       suffixe <- sprintf("_%s", suffixe)
@@ -204,7 +228,10 @@ tex_df2kable <- function(df, dsn = FALSE, suffixe = "", dossier = "", nb_lignes 
     }
     dsn <- sprintf("%s/%s%s%s.tex", texDir, dossier, curcall, suffixe)
   }
-  carp("dsn: %s", dsn)
+  if (num == TRUE) {
+    df <- tibble::rowid_to_column(df, "NO")
+  }
+  Carp("dsn: %s", dsn)
   if (nrow(df) > 0) {
     if (escape == FALSE) {
       colnames(df) <- escapeLatexSpecials(colnames(df))
@@ -212,20 +239,39 @@ tex_df2kable <- function(df, dsn = FALSE, suffixe = "", dossier = "", nb_lignes 
     }
     linesep <- c("", "", "", "", "", "", "", "", "", "\\addlinespace")
     repeat_header_text = "\\textit{(suite)}"
-    tex <- knitr::kable(df, "latex"
-      , longtable = T
-      , booktabs = T
-      , digits = digits
-      , linesep = linesep
-      , format.args = list(decimal.mark = ',')
-      , escape = escape
-      ) %>%
-      kable_styling(
-        position = "left",
-        font_size = font_size,
-        latex_options = c("repeat_header"),
-        repeat_header_text = repeat_header_text
-      )
+    if (longtable == TRUE) {
+      tex <- knitr::kable(df, "latex"
+        , longtable = T
+        , booktabs = T
+        , digits = digits
+        , linesep = linesep
+        , format.args = list(decimal.mark = ',')
+        , escape = escape
+        ) %>%
+# https://thinkr.fr/les-tableaux-statiques-pour-vos-rapports-en-r/
+        kable_styling(
+          position = "left",
+          font_size = font_size,
+          latex_options = c("repeat_header"),
+          repeat_header_text = repeat_header_text
+        )
+    } else {
+      tex <- knitr::kable(df, "latex"
+        , longtable = F
+        , booktabs = T
+        , digits = digits
+        , linesep = linesep
+        , format.args = list(decimal.mark = ',')
+        , escape = escape
+        ) %>%
+# https://thinkr.fr/les-tableaux-statiques-pour-vos-rapports-en-r/
+        kable_styling(
+          position = "left",
+          font_size = font_size,
+          latex_options = c("repeat_header", "striped", "scale_down"),
+          repeat_header_text = repeat_header_text
+        )
+    }
     if (extra != FALSE) {
 #      tex <- do.call(extra, list(tex))
 #      column_spec(3, width = "50em")
@@ -238,15 +284,53 @@ TABLEAU VIDE
 
 "
   }
-  f <- file(dsn, open="w")
+  f <- file(dsn, open = "w")
   writeLines(tex, f)
   close(f)
   return(tex)
 }
+#
+# la version avec tabularray
+# problème de performances
+#
+tex_df2longtblr <- function(df, dsn = FALSE, suffixe = "", dossier = "", num = FALSE, digits = 1) {
+  options("encoding" = "UTF-8")
+  if ( dsn == FALSE ) {
+    curcall <- as.character(deparse(sys.call(-1)))[1]
+    curcall <- gsub('\\(.*$', '', curcall)
+    if ( suffixe != "" ) {
+      suffixe <- sprintf("_%s", suffixe)
+    }
+    if ( dossier != "" ) {
+      dossier <- sprintf("%s/", dossier)
+      d <- sprintf("%s/%s", texDir, dossier)
+      dir.create(d, showWarnings = FALSE, recursive = TRUE)
+    }
+    dsn <- sprintf("%s/%s%s%s.tex", texDir, dossier, curcall, suffixe)
+  }
+  if (num == TRUE) {
+    df <- tibble::rowid_to_column(df, "NO")
+  }
+  Carp("dsn: %s", dsn)
+  df1 <- df %>%
+    mutate(row = sprintf("%s & %s & %s\\\\", ref, stops, names)) %>%
+    glimpse()
+  rows <- paste(df1$row, collapse = "\n")
+  tex <- sprintf("\\begin{longtblr}[
+caption = {Tableau des relations},
+]{colspec={ll},hlines}
+%s
+\\end{longtblr}", rows)
+  f <- file(dsn, open = "w")
+  writeLines(tex, f)
+  close(f)
+  return(tex)
+}
+
 tex_texte <- function(texte, dsn = FALSE, suffixe = "", dossier = "", escape = TRUE) {
   options("encoding" = "UTF-8")
   if ( dsn == FALSE ) {
-    curcall <- as.character(deparse(sys.call(-1)))
+    curcall <- as.character(deparse(sys.call(-1)))[1]
     curcall <- gsub('\\(.*$', '', curcall)
     if ( suffixe != "" ) {
       suffixe <- sprintf("_%s", suffixe)
@@ -270,6 +354,7 @@ tex_texte <- function(texte, dsn = FALSE, suffixe = "", dossier = "", escape = T
 # conversion en table latex
 tex_df2table_v1 <- function(df, dsn=FALSE, suffixe="", num=FALSE, nb_lignes=50, align=FALSE) {
   library(xtable)
+  stop("**********")
   if ( dsn == FALSE ) {
     curcall <- as.character(deparse(sys.call(-1)))
     curcall <- gsub('\\(.*$', '', curcall)
@@ -295,11 +380,11 @@ tex_df2table_v1 <- function(df, dsn=FALSE, suffixe="", num=FALSE, nb_lignes=50, 
     fin <- min(fin, nrow(df))
     dfl <- df[ligne:fin,]
     df.table <- xtable(dfl, digits=0)
-#    align(df.table, "rlrrrrr")
+    align(df.table, "lp{1in}p{3in}")
     if ( align == FALSE) {
-      print(df.table, type="latex", include.rownames=num, table.placement="!ht")
+      print(df.table, type="latex", tabular.environment="longtable", include.rownames=num, table.placement="!ht")
     } else {
-      print(df.table, type="latex", include.rownames=num, table.placement="!ht", align=align)
+      print(df.table, type="latex", tabular.environment="longtable", include.rownames=num, table.placement="!ht", align=align)
     }
 #    cat("\\vfill\n\\clearpage\n")
     ajout <- TRUE
@@ -311,7 +396,7 @@ tex_df2table_v1 <- function(df, dsn=FALSE, suffixe="", num=FALSE, nb_lignes=50, 
 escapeLatexSpecials <- function(x) {
 #  x <- gsub("\\", "$\\backslash$", x, fixed = T)
   x <- gsub("#", "\\\\#", x)
-#  x <- gsub("$", "\\\\$", x)
+  x <- gsub("\\$", "\\\\$", x)
   x <- gsub("%", "\\\\%", x)
 #  x <- gsub("&", "***", x)
   x <- gsub("&", "\\\\&", x)
@@ -322,8 +407,20 @@ escapeLatexSpecials <- function(x) {
 #  x <- gsub("^", "\\\\^", x)
 #  x <- gsub("\\{", "\\\\{", x)
 #  x <- gsub("\\}", "\\\\}", x)
-  x <- gsub(">", "$>$", x)
-  x <- gsub("<", "$<$", x)
+#  x <- gsub(">", "$>$", x)
+#  x <- gsub("<", "$<$", x)
+  return(x)
+}
+tex_escape <- function(x) {
+  x <- gsub("#", "\\\\#", x)
+  x <- gsub("\\$", "\\\\$", x)
+  x <- gsub("%", "\\\\%", x)
+#  x <- gsub("&", "***", x)
+  x <- gsub("&", "\\\\&", x)
+  x <- gsub("~", "\\\\~", x)
+  x <- gsub("_", "\\\\_", x)
+#  x <- gsub("_", "\\\\\\\\_", x)
+  x <- gsub("%", "\\\\%", x)
   return(x)
 }
 tex_regex_escape <- function(x, double_backslash = FALSE) {
@@ -331,6 +428,7 @@ tex_regex_escape <- function(x, double_backslash = FALSE) {
     x <- gsub("\\\\", "\\\\\\\\", x)
   }
   x <- gsub("\\$", "\\\\\\$", x)
+  x <- gsub("\\_", "\\\\_", x)
   x <- gsub("\\(", "\\\\(", x)
   x <- gsub("\\)", "\\\\)", x)
   x <- gsub("\\[", "\\\\[", x)
@@ -383,8 +481,11 @@ tex_df2tpl <- function(df, i, tpl) {
   if (inherits(df, "sf")) {
     df <- st_drop_geometry(df)
   }
+  df <- as.data.frame(df)
+#  glimpse(df[i, ])
 #  mga <<- df
   for ( v in colnames(df) ) {
+#    carp("v: %s", v)
     if( is.na(df[i, v]) ) {
       val <- ''
     } else {
@@ -416,9 +517,15 @@ tex_df2tpl <- function(df, i, tpl) {
 }
 #
 # setwd('d:/web');source("geo/scripts/onc35.R");tex_pdflatex()
-tex_pdflatex <- function(dsn = "especes.tex") {
+tex_pdflatex <- function(dsn = "especes.tex", dossier = "") {
   library(tinytex)
-  carp("dsn: %s", dsn)
+  if (Tex == FALSE) {
+    return(invisible(Tex))
+  }
+  if (dossier != "") {
+    texDir <- sprintf("%s/%s", texDir, dossier)
+  }
+  carp("dsn: %s texDir: %s", dsn, texDir)
   setwd(texDir)
   pdf <- str_replace(dsn , "tex$", "pdf")
   pdf <- sprintf("%s/%s", texDir, pdf)
@@ -428,6 +535,7 @@ tex_pdflatex <- function(dsn = "especes.tex") {
     carp('tDir: %s', tDir)
     setwd(tDir)
   }
+  carp("getwd: %s", getwd())
   options(tinytex.verbose = TRUE)
 #  options(tinytex.verbose = FALSE)
   x <- tryCatch(
@@ -441,5 +549,6 @@ tex_pdflatex <- function(dsn = "especes.tex") {
   carp("baseDir: %s", baseDir)
   setwd(baseDir)
   misc_openFile(pdf)
+  return(invisible(pdf))
 }
 

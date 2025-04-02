@@ -5,6 +5,8 @@
 # licence: Creative Commons Paternité - Pas d'Utilisation Commerciale - Partage des Conditions Initiales à l'Identique 2.0 France
 # ===============================================================
 #
+GGPLOT_WATERMARK <- FALSE
+GGPLOT_COJ <- TRUE
 #
 #
 ggplot_init <- function() {
@@ -75,6 +77,32 @@ ggplot_integer_breaks <- function(n = 5, ...) {
   return(fxn)
 }
 #
+ggplot_casamance <- function() {
+  carp()
+  library(ggplot2)
+  theme_gg <- theme(
+    axis.line=element_blank(),
+    axis.text.x=element_blank(),
+    axis.text.y=element_blank(),
+    axis.ticks=element_blank(),
+    plot.background = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.background = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    plot.margin = margin(
+      t = 0,  # Top margin
+      r = 0,  # Right margin
+      b = 0,  # Bottom margin
+      l = 0   # Left margin
+    ),
+#    plot.background = element_rect(color = 1, size = 1)
+  )
+  return(invisible(theme_gg))
+}
+#
 #
 ggplot_chelon <- function() {
   carp("début")
@@ -97,6 +125,89 @@ ggplot_chelon <- function() {
 }
 #
 #
+ggplot_gci35 <- function() {
+  carp()
+  library(ggplot2)
+  theme_gg <- theme(
+#    axis.line=element_blank(),
+#    axis.text.x=element_blank(),
+#    axis.text.y=element_blank(),
+#    axis.ticks=element_blank(),
+    panel.background = element_rect(fill = "grey"),
+    plot.background = element_rect(fill = "grey"),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+#    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+  )
+  return(invisible(theme_gg))
+}
+ggplot_gci35_watermark <- function(gg, angle = 45) {
+  library(cowplot)
+  gg <- ggdraw(gg) +
+    draw_label(
+      "@ Marc Gauthier CC-BY-NC-ND",
+      color = "white",
+      alpha = 0.5,
+      size = 20,
+      angle = angle
+    )
+  return(invisible(gg))
+}
+#
+#
+ggplot_stoc <- function() {
+  carp()
+  library(ggplot2)
+  theme_gg <- theme(
+    panel.background = element_rect(fill = "grey"),
+    plot.background = element_rect(fill = "grey"),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.ticks = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+  )
+  return(invisible(theme_gg))
+}
+ggplot_stoc_watermark <- function(gg) {
+  gg <- gg +
+    annotate("text", x = Inf, y = -Inf, label = "@ Marc Gauthier CC-BY-NC-ND"
+      , hjust=1.1, vjust=-1.1, col="white", cex=6,  fontface = "bold", alpha = 0.8
+    )
+  return(invisible(gg))
+}
+ggplot_stoc_watermark <- function(gg, angle = 30) {
+  library(cowplot)
+  gg <- ggdraw(gg) +
+    draw_label(
+      "@ Marc Gauthier CC-BY-NC-ND",
+      color = "white",
+      alpha = 0.5,
+      size = 24,
+      angle = angle
+    )
+  return(invisible(gg))
+}
+ggplot_coj_watermark <- function(gg) {
+  library(cowplot)
+  label <- format(Sys.time(), "%a %d %b %Y %X")
+  gg <- ggdraw(gg) +
+    draw_label(
+      label,
+      x = 0,
+      y = 0,
+      hjust = 0,
+      vjust = 0,
+      color = "orange",
+      alpha = 0.5,
+      size = 8
+    )
+  return(invisible(gg))
+}
 ggplot_geonature <- function() {
   carp()
   library(ggplot2)
@@ -114,11 +225,12 @@ ggplot_geonature <- function() {
   )
   return(invisible(theme_gg))
 }
+
 # https://www.data-imaginist.com/2020/insetting-a-new-patchwork-version/
 # https://rstudio-pubs-static.s3.amazonaws.com/92534_af09813c707b4bb382bfd539f78d4750.html
 #
 # en direct de https://rdrr.io/github/datarootsio/artyfarty/src/R/watermark.R
-ggplot_watermark_txt <- function(txt = "@ Marc Gauthier CC-BY-NC-ND", x, y, location="br", rot=0, ...){
+ggplot_watermark_txt <- function(txt = "@ Marc Gauthier CC-BY-NC-ND", x, y, location = "br", rot=0, ...){
   extra_gpar <- list(...)
   gpar <- grid::get.gpar()
 
@@ -162,7 +274,7 @@ ggplot_watermark <- function(txt = "@ Marc Gauthier CC-BY-NC-ND") {
     family='Arial'
   )
 }
-ggplot_grid_text <- function(texte = "@ Marc Gauthier CC-BY-NC-ND", position = "bottomright") {
+ggplot_grid_texte <- function(texte = "@ Marc Gauthier CC-BY-NC-ND", position = "bottomright", col = "black") {
   library(readr)
   library(tidyverse)
   library(grid)
@@ -191,7 +303,6 @@ centerup,0.5,0.5,0.5,0.5,45
   rot <- df[1, "rot"]
 # https://www.rdocumentation.org/packages/grid/versions/3.6.2/topics/grid.text
   alpha <- 0.8
-  col <- "red"
   grob <- grobTree(textGrob(texte, x = x, y = y, hjust = hjust, vjust = vjust, rot = rot,
     gp=gpar(col = col, cex = 1, fontface = "bold", alpha = alpha)
 #    vp = outerBox
@@ -218,9 +329,9 @@ ggplot_copy <- function(texte = "@ Marc Gauthier CC-BY-NC-ND", position = "botto
         , hjust=0, vjust=1, col="white", cex = cex,  fontface = "bold", alpha = 0.8
       )
   }
-
   return(invisible(gg))
 }
+
 # https://stackoverflow.com/questions/16422847/save-plot-with-a-given-aspect-ratio
 ggplot_sizeit <- function(p, panel.size = 2, default.ar=1){
   library(ggplot2)
@@ -269,4 +380,32 @@ ggplot_ratio <- function(p, default.ar=-1){
   if(is.null(ar)) # if the aspect ratio wasn't specified by the plot
       ar <- default.ar
   ar[1]
+}
+#
+# sauvegarde en fichier pdf du graphique ggplot
+ggplot_pdf <- function(plot = last_plot(), suffixe = '', dossier = '',  width = 0, height = 0) {
+  if (GGPLOT_WATERMARK != FALSE) {
+    plot <- ggplot_stoc_watermark(plot)
+  }
+  if (GGPLOT_COJ != FALSE) {
+    plot <- ggplot_coj_watermark(plot)
+  }
+  if ( width == 0 ) {
+    width <- par("din")[1]
+    height <- par("din")[2]
+  }
+#  stop("****")
+  curcall <- as.character(deparse(sys.call(-1)))[1]
+  curcall <- gsub('\\(.*$', '', curcall)
+  if ( suffixe != "" ) {
+    suffixe <- sprintf("_%s", suffixe)
+  }
+  if ( dossier != "" ) {
+    dossier <- sprintf("/%s", dossier)
+  }
+  dsn <- sprintf("%s%s/%s%s.pdf", texDir, dossier, curcall, suffixe)
+  print(sprintf("%s() dsn : %s", curcall, dsn))
+#  ggsave(dsn, width=width, height=height)
+  ggsave(dsn, plot = plot)
+  carp("***dsn: %s", dsn)
 }

@@ -1,6 +1,8 @@
+# <!-- coding: utf-8 -->
 #
-# quelques fonction pour la casamance
-# auteur: Marc Gauthier
+# quelques fonctions pour la casamance / Bruno Bargain
+# auteur : Marc Gauthier
+# licence: Creative Commons Paternité - Pas d'Utilisation Commerciale - Partage des Conditions Initiales à l'Identique 2.0 France
 #
 #
 # conversion des données
@@ -20,7 +22,7 @@ donnees_ods2xlsx <- function() {
 # lecture des données
 # source("geo/scripts/casamance.R");donnees_lire_rio()
 donnees_lire_rio <- function(force = FALSE) {
-  if (exists("rio.df") & force == FALSE) {
+  if (exists("rio.df") && force == FALSE) {
     return(rio.df)
   }
   library(rio)
@@ -50,6 +52,21 @@ donnees_lire_rio <- function(force = FALSE) {
   dsn <- sprintf("%s/CONF/donnees20211012_v2.xlsx", varDir)
   dsn <- sprintf("%s/CONF/donnees20211220_v2.xlsx", varDir)
   dsn <- sprintf("%s/CONF/donnees20220705_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20220927_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20220927_v4.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20220927_v6.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20221002_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20221004_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20230127_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20230131_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20230202_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20240213_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20240220_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20240222_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20240912_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20241104_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20250210_v2.xlsx", varDir)
+  dsn <- sprintf("%s/CONF/donnees20250225_v2.xlsx", varDir)
   carp("dsn: %s", dsn)
   rio.df <<- import(dsn, col_names = TRUE) %>%
     glimpse()
@@ -79,32 +96,32 @@ donnees_especes <- function() {
   library(rio)
   df <- donnees_lire()
   especes.df <- especes_lire_xls()
-  carp('nom francais')
+  carp("nom francais")
   df %>%
     filter(! nom_francais %in% especes.df$nom_francais) %>%
     glimpse()
-  carp('nom anglais')
+  carp("nom anglais")
   df %>%
     filter(! nom_anglais %in% especes.df$nom_anglais) %>%
     glimpse()
-  carp('nom scientifique')
+  carp("nom scientifique")
   df %>%
     filter(! nom_scientifique %in% especes.df$nom_scientifique) %>%
     glimpse()
-  carp('especes')
+  carp("especes")
   df1 <- df %>%
-    mutate(francais = ifelse(nom_francais %in% especes.df$nom_francais, '', 'ko')) %>%
-    mutate(scientifique = ifelse(nom_scientifique %in% especes.df$nom_scientifique, '', 'ko')) %>%
-    mutate(anglais = ifelse(nom_anglais %in% especes.df$nom_anglais, '', 'ko')) %>%
-    filter(anglais == 'ko') %>%
-    left_join(especes.df, by = c('nom_scientifique' = 'nom_scientifique')) %>%
+    mutate(francais = ifelse(nom_francais %in% especes.df$nom_francais, "", "ko")) %>%
+    mutate(scientifique = ifelse(nom_scientifique %in% especes.df$nom_scientifique, "", "ko")) %>%
+    mutate(anglais = ifelse(nom_anglais %in% especes.df$nom_anglais, "", "ko")) %>%
+    filter(anglais == "ko") %>%
+    left_join(especes.df, by = c("nom_scientifique" = "nom_scientifique")) %>%
     dplyr::select(nom_scientifique, nom_francais.x, nom_francais.y, nom_anglais.x, nom_anglais.y) %>%
     arrange(nom_scientifique) %>%
     glimpse() %>%
     print(n = 50, na.print = "")
   dsn <- sprintf("%s/CONF/especes_mga.xlsx", varDir)
   export(df1, dsn)
-  carp('dsn: %s', dsn)
+  carp("dsn: %s", dsn)
 }
 #
 # lecture des données
@@ -196,12 +213,12 @@ donnees_base_cmp <- function() {
   library(tidyverse)
   library(janitor)
   library(rio)
-  carp('excel')
+  carp("excel")
   xls.df <- donnees_lire_rio() %>%
     mutate(DateObs = format(DateObs, format = "%Y-%m-%d")) %>%
     replace(., is.na(.), "") %>%
     glimpse()
-  carp('sql')
+  carp("sql")
   sql.df <- sql_lire() %>%
     glimpse()
   df <- left_join(sql.df, xls.df) %>%
